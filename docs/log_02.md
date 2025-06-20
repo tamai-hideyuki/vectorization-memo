@@ -6,4 +6,6 @@
 - requirements.txt にタイプミス: `unicorn` → `uvicorn`
 - ファイルを保存し、再度インストール： `pip install -r requirements.txt`
 - サーバ起動： `uvicorn main:app --reload --host 0.0.0.0 --port 8000`
+- apps/backend/main.py 修正: FastAPI(...) の引数リストで title="Vectorization Memo API" の行末にカンマを入れ、description=… を正しく引数として区切るように修正
+- 
 
