@@ -10,5 +10,4 @@
 - 再度サーバ起動： `uvicorn main:app --reload --host 0.0.0.0 --port 8000`
 - 発見！: FastAPI を使うと、/docs に Swagger UI が自動で立ち上がるので、あたかも専用のフロントを用意したかのように API を試せる。
 - apps/backend/memos/ここに作成されるのを./memos/ここに保存するように変更
-- 
-
+- [02 終了 03 へ](./log_03.md)
