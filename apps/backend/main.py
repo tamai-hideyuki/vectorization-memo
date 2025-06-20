@@ -3,10 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import uuid
 from datetime import datetime
+from pathlib import Path
+
+
+BASE_DIR    = Path(__file__).resolve().parent.parent.parent
+MEMOS_ROOT  = BASE_DIR / "memos"
+
 
 app = FastAPI(
     title="Vectorization Memo API",
-    description="メタ付きテキストファイルを `memos/` に保存する API",
+    description="メタ付きテキストファイルを `./memos/` に保存する API",
 )
 
 # CORS 設定（開発用。公開時はオリジン制限を）
@@ -30,10 +36,10 @@ async def create_memo(
     """
     uid = str(uuid.uuid4())
     now = datetime.utcnow().isoformat() + "Z"
-    dirpath = os.path.join("memos", category)
-    os.makedirs(dirpath, exist_ok=True)
+    dirpath = MEMOS_ROOT / category
+    dirpath.mkdir(parents=True, exist_ok=True)
 
-    filepath = os.path.join(dirpath, f"{uid}.txt")
+    filepath = dirpath / f"{uid}.txt"
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"UUID: {uid}\n")
         f.write(f"CREATED_AT: {now}\n")
@@ -43,4 +49,4 @@ async def create_memo(
         f.write("\n---\n")
         f.write(f"{title}\n\n{body}")
 
-    return {"message": "saved", "path": filepath}
+    return {"message": "saved", "path": str(filepath)}
