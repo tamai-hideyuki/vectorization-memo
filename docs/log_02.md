@@ -1,0 +1,3 @@
+- 記入: apps/backend/requirements.txt
+- 記入: apps/backend/main.py
+- 依存パッケージをインストール: Backend ディレクトリで実行`pip install -r requirements.txt`
