@@ -1,3 +1,2 @@
-## Next.js ベースの メモ作成UI
-- フォーム（カテゴリ／タイトル／タグ／本文）から API 呼び出し
-- 保存結果を画面に表示
+- 追加: apps/frontend/package.json
+- 
