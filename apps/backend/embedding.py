@@ -1,8 +1,8 @@
 from pathlib import Path
+import json
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
-
 
 def build_index(
     root_dir: str = None,
@@ -17,13 +17,13 @@ def build_index(
     ・LaBSE 埋め込み計算 + L2 正規化
     ・FAISS IndexFlatIP に登録して返却
     """
-    # 1) モデルロード
+    # モデルロード
     model = SentenceTransformer(model_name)
 
-    # 2) メモ格納パス
+    # メモ格納パス
     base = Path(root_dir) if root_dir else Path(__file__).resolve().parent.parent / "memos"
     if not base.exists():
-        raise FileNotFoundError(f"Memos directory not found: {base}")
+        raise FileNotFoundError(f"メモディレクトリが見つかりません: {base}")
 
     chunks, metas = [], []
     for cat in sorted(base.iterdir()):
@@ -46,7 +46,7 @@ def build_index(
                     "offset": i,
                 })
 
-    # 3) 埋め込み計算
+    # 埋め込み計算
     embeddings = model.encode(
         chunks,
         batch_size=batch_size,
@@ -54,11 +54,11 @@ def build_index(
         normalize_embeddings=False
     )
 
-    # 4) L2 正規化
+    # L2 正規化
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
     embeddings = embeddings / np.clip(norms, a_min=1e-12, a_max=None)
 
-    # 5) FAISS インデックス作成
+    # FAISS インデックス作成
     dim = embeddings.shape[1]
     index = faiss.IndexFlatIP(dim)
     index.add(embeddings)
@@ -66,5 +66,15 @@ def build_index(
     return index, metas
 
 if __name__ == "__main__":
+    # インデックス構築＋永続化
     idx, metas = build_index()
-    print(f"{idx.ntotal} ベクトルで FAISS インデックスを構築しました。")
+    base = Path(__file__).resolve().parent.parent / "memos"
+    base.mkdir(parents=True, exist_ok=True)
+
+    # FAISS インデックスを書き出し
+    faiss.write_index(idx, str(base / "index.faiss"))
+    # メタ情報を書き出し
+    with open(base / "metas.json", "w", encoding="utf-8") as f:
+        json.dump(metas, f, ensure_ascii=False, indent=2)
+
+    print(f"{idx.ntotal} 個のベクトルを構築し、 '{base}' に保存しました。")
