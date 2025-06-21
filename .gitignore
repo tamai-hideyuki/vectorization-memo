@@ -1,6 +1,12 @@
 memos/
 .venv/
 
+apps/frontend/.next/
+apps/frontend/node_modules/
+
+apps/frontend/next-env.d.ts/
+apps/frontend/.swc/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
