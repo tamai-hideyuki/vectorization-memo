@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json, faiss, uuid, os
 from pathlib import Path
 from fastapi import FastAPI, Form, HTTPException

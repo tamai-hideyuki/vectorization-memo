@@ -1,8 +1,24 @@
+#!/usr/bin/env python3
+
 from pathlib import Path
+import os
+try:
+    os.nice(10)
+except Exception:
+    pass
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
 import json
 import numpy as np
 import faiss
+import torch
 from sentence_transformers import SentenceTransformer
+
+# torch スレッド設定
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
+
 
 def build_index(
     root_dir: str = None,
@@ -11,19 +27,20 @@ def build_index(
     batch_size: int = 8
 ):
     """
-    ・ディレクトリ以下の .txt を読み込み
-    ・YAML Front Matter 等をスキップして本文のみ抽出
-    ・トークン数ベースでチャンク化 (chunk_token_sizeトークンごと)
-    ・LaBSE 埋め込み計算 + L2 正規化
-    ・FAISS IndexFlatIP に登録して返却
+    ・プロジェクトルートの memos/ 以下の .txt を読み込み
+    ・YAML Front Matter をスキップ
+    ・トークン数ベースでチャンク化
+    ・LaBSE 埋め込み + L2 正規化
+    ・FAISS IndexFlatIP を構築して返却
     """
-    # モデルロード
+    # モデルロード + DataLoader 並列抑制
     model = SentenceTransformer(model_name)
+    model._cpu_count = 0
 
-    # メモ格納パス
-    base = Path(root_dir) if root_dir else Path(__file__).resolve().parent.parent / "memos"
+    # メモ格納パス (project_root/memos)
+    base = Path(root_dir) if root_dir else Path(__file__).resolve().parent.parent.parent / "memos"
     if not base.exists():
-        raise FileNotFoundError(f"メモディレクトリが見つかりません: {base}")
+        raise FileNotFoundError(f"Memos directory not found: {base}")
 
     chunks, metas = [], []
     for cat in sorted(base.iterdir()):
@@ -31,20 +48,13 @@ def build_index(
             continue
         for file in sorted(cat.glob("*.txt")):
             text = file.read_text(encoding="utf-8")
-            # YAML Front Matter を除去
             if text.startswith("---"):
                 _, _, text = text.split("---", 2)
-
-            # トークン分割によるチャンク化
             tokens = text.split()
             for i in range(0, len(tokens), chunk_token_size):
-                chunk = " ".join(tokens[i : i + chunk_token_size])
+                chunk = " ".join(tokens[i:i+chunk_token_size])
                 chunks.append(chunk)
-                metas.append({
-                    "category": cat.name,
-                    "filename": file.name,
-                    "offset": i,
-                })
+                metas.append({"category": cat.name, "filename": file.name, "offset": i})
 
     # 埋め込み計算
     embeddings = model.encode(
@@ -65,16 +75,17 @@ def build_index(
 
     return index, metas
 
-if __name__ == "__main__":
-    # インデックス構築＋永続化
-    idx, metas = build_index()
-    base = Path(__file__).resolve().parent.parent / "memos"
-    base.mkdir(parents=True, exist_ok=True)
 
-    # FAISS インデックスを書き出し
-    faiss.write_index(idx, str(base / "index.faiss"))
-    # メタ情報を書き出し
-    with open(base / "metas.json", "w", encoding="utf-8") as f:
+if __name__ == "__main__":
+    # インデックス構築 + 永続化
+    idx, metas = build_index()
+    out_dir = Path(__file__).resolve().parent.parent.parent / "memos"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # FAISS インデックスを保存
+    faiss.write_index(idx, str(out_dir / "index.faiss"))
+    # メタ情報を保存
+    with open(out_dir / "metas.json", "w", encoding="utf-8") as f:
         json.dump(metas, f, ensure_ascii=False, indent=2)
 
-    print(f"{idx.ntotal} 個のベクトルを構築し、 '{base}' に保存しました。")
+    print(f"{idx.ntotal} 個のベクトルを構築し、'{out_dir}' に保存しました")

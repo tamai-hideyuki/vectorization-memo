@@ -6,12 +6,8 @@
 - 修正: main.py
   - 起動時に memos/index.faiss と memos/metas.json を読み込むロジックを追加
   - LaBSE モデルでクエリを埋め込み＋正規化し /api/search で内積検索を行うエンドポイントを実装
-- 確認: 
-  - apps/backend/`rebuild_index.py` を手動で実行して、memos/index.faiss と memos/metas.json が正しく作られるか。
-  - 起動時の読み込み（API サーバ起動時に例外なく動いているか（ファイルパスや権限ミスがないか）。）
-  - Swagger UI（/docs）やフロント側から POST /api/search を呼び出し、想定どおりのスコア付き結果が返るか。
-  - インデックス未構築時には 503 Index not built yet. が返るか。
-  - M4＋32GB 上で、検索のレスポンスタイムが十分速いか。
-  - 大量メモを読み込むバッチ処理（build_index）の所要時間が許容範囲か。
-  - requirements.txt に torch / sentence-transformers / faiss-cpu が追記されているか。
-  - Docker／CI 環境でも同様にインストールされるか。
+- 問題: macOS (Apple Silicon) × Python 3.13 環境では、PyPI にある faiss-cpu wheel が正式対応しておらず、index.add() や faiss.read_index() 呼び出し時に SIGSEGV が発生
+  - 対応方法: Python 3.11 環境に切り替える `brew install pyenv` && `pyenv install 3.11.9` && `pyenv local 3.11.9`      # このプロジェクトだけ 3.11 を有効化する。
+  - venv を作り直して依存を再インストール: `python3 -m venv .venv` && `source .venv/bin/activate` && `pip install -r apps/backend/requirements.txt`
+- `python3 embedding.py` を実行しベクトル構築成功
+
