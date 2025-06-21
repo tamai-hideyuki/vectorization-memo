@@ -7,7 +7,7 @@
   - 起動時に memos/index.faiss と memos/metas.json を読み込むロジックを追加
   - LaBSE モデルでクエリを埋め込み＋正規化し /api/search で内積検索を行うエンドポイントを実装
 - 確認: 
-  - apps/backend/rebuild_index.py を手動で実行して、memos/index.faiss と memos/metas.json が正しく作られるか。
+  - apps/backend/`rebuild_index.py` を手動で実行して、memos/index.faiss と memos/metas.json が正しく作られるか。
   - 起動時の読み込み（API サーバ起動時に例外なく動いているか（ファイルパスや権限ミスがないか）。）
   - Swagger UI（/docs）やフロント側から POST /api/search を呼び出し、想定どおりのスコア付き結果が返るか。
   - インデックス未構築時には 503 Index not built yet. が返るか。
