@@ -1,2 +1,3 @@
 - 追加: apps/frontend/package.json
+- 追加: apps/frontend/lib/api.ts
 - 
