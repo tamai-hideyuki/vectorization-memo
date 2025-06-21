@@ -1,4 +1,15 @@
 - 追加: apps/frontend/package.json
 - 追加: apps/frontend/lib/api.ts
 - 追加: apps/frontend/pages/index.tsx
-- 
+- 動作確認: 
+  - 依存をインストール 
+    - `cd apps/frontend`
+    - `npm install`
+    - セキュリティ警告を確認
+      -  `npm audit` で`1 high severity vulnerability`
+        - 現在はローカル開発用の依存のみなのでスルー
+  - 起動
+    - `npm run dev`
+  - ブラウザで http://localhost:3000 を開き、フォームからメモを作成→結果が表示されることを確認
+- **Next.js ベースのメモ作成UI の動作確認は完了** 
+  - マイルストーン4：Embedding＆FAISS の骨格実装 へ
