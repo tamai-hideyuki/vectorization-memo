@@ -1,3 +1,4 @@
 - 追加: apps/frontend/package.json
 - 追加: apps/frontend/lib/api.ts
+- 追加: apps/frontend/pages/index.tsx
 - 
