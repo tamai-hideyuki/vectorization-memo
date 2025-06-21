@@ -12,5 +12,10 @@
     - `npm run dev`
   - ブラウザで http://localhost:3000 を開き、フォームからメモを作成→結果が表示されることを確認
   - 修正: pages/index.tsx の JSX の閉じ括弧を修正し、return ( … ); の形になるように更新
+- 作成: __tests__/
+  - api.test.ts
+  - Home.test.tsx
+    - `npm run test`
+
 - **Next.js ベースのメモ作成UI の動作確認は完了** 
   - マイルストーン4：Embedding＆FAISS の骨格実装 へ
