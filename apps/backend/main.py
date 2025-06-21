@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 from fastapi import HTTPException
 
 # ==== FastAPI 初期化 ====
-BASE_DIR   = Path(__file__).resolve().parent.parent
+BASE_DIR   = Path(__file__).resolve().parent
 MEMOS_ROOT = BASE_DIR / "memos"
 
 app = FastAPI(
