@@ -1,2 +1,6 @@
 - 追記: apps/backend/requirements.txt
   - 理由: SentenceTransformer と FAISS が使えるようにするため
+- cd apps/backend
+  - `pip install -r requirements.txt` (必要なライブラリのインストール)
+- 作成: apps/backend/embedding.py
+- 
