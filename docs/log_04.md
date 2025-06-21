@@ -1,0 +1,2 @@
+- 追記: apps/backend/requirements.txt
+  - 理由: SentenceTransformer と FAISS が使えるようにするため
