@@ -10,4 +10,51 @@
   - 対応方法: Python 3.11 環境に切り替える `brew install pyenv` && `pyenv install 3.11.9` && `pyenv local 3.11.9`      # このプロジェクトだけ 3.11 を有効化する。
   - venv を作り直して依存を再インストール: `python3 -m venv .venv` && `source .venv/bin/activate` && `pip install -r apps/backend/requirements.txt`
 - `python3 embedding.py` を実行しベクトル構築成功
+- API 連携テスト
+```bash
+cd apps/backend
+source .venv/bin/activate   # 仮想環境有効化済みの場合
+uvicorn main:app --reload --port 8000
+```
+- インデックス読み込み確認
+  - サーバ開始ログにエラーが出ないことを確認
+- curl で検索リクエスト
+```bash
+curl -X POST http://localhost:8000/api/search \
+  -F 'query=テスト' \
+  -F 'k=3' 
+```
+**HTTP 200 が返り、results 配列と各要素に category, filename, offset, score があること**
+
+- Swagger UI で動作確認
+- ブラウザで http://localhost:8000/docs にアクセス
+- POST /api/search を選択
+- パラメータ入力
+  - query: 任意の検索語句（例: テスト）
+  - k : ヒット数（例: 3）
+- Execute を押下
+  - レスポンスに正しく results が表示されること
+
+- README.mdに追記
+```bash
+## インデックス生成
+
+```bash
+# プロジェクトルートから実行
+python3 apps/backend/embedding.py 
+```
+
+**これで memos/index.faiss と memos/metas.json が生成される**
+
+- 検索エンドポイント
+```bash
+# FastAPI サーバ起動
+uvicorn apps/backend/main:app --reload --port 8000
+
+# 検索例 (curl)
+curl -X POST http://localhost:8000/api/search \
+  -F 'query=検索ワード' \
+  -F 'k=5'
+```
+**レスポンスは JSON の results 配列で返却されます。各要素に category, filename, offset, score が含まれます。**
 
