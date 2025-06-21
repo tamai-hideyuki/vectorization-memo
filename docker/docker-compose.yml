@@ -1,20 +1,20 @@
 services:
-  frontend:
-    build:
-      context: ../
-      dockerfile: docker/frontend.Dockerfile
-    container_name: vectorization-frontend
-    ports:
-      - "3100:3000"
-    depends_on:
-      - backend
-
   backend:
     build:
-      context: ../
+      context: ..
       dockerfile: docker/backend.Dockerfile
     container_name: vectorization-backend
     ports:
       - "8001:8000"
     volumes:
       - ../memos:/app/memos
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    container_name: vectorization-frontend
+    ports:
+      - "3100:3000"
+    depends_on:
+      - backend
