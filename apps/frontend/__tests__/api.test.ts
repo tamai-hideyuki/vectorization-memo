@@ -1,6 +1,6 @@
 import { createMemo } from '../lib/api';
 
-global.fetch = jest.fn();
+global.fetch = jest.fn() as jest.Mock;
 
 describe('createMemo', () => {
     beforeEach(() => {
