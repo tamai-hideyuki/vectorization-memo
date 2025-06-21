@@ -7,7 +7,7 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./memos:/app/memos
+      - ../memos:/app/memos
 
   frontend:
     build:
