@@ -1,0 +1,91 @@
+.main {
+    padding: 2rem;
+    font-family: Arial, sans-serif;
+}
+
+.form {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 600px;
+}
+
+.input {
+    padding: 0.5rem;
+    font-size: 1rem;
+}
+
+.button {
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+.error {
+    color: red;
+}
+
+.results {
+    margin-top: 2rem;
+}
+
+.table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.th {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    text-align: left;
+    background-color: #f0f0f0;
+}
+
+.td {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+}
+
+.clickable {
+    cursor: pointer;
+    color: #0066cc;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background-color: #fff;
+    padding: 1.5rem;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background-color: #fafafa;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.closeButton {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+
+.backLink {
+    margin-top: 2rem;
+}
