@@ -8,13 +8,19 @@ services:
       - "8001:8000"
     volumes:
       - ../memos:/app/memos
+      - memo_index:/app/apps/backend/.index_data
 
   frontend:
     build:
       context: ..
       dockerfile: docker/frontend.Dockerfile
     container_name: vectorization-frontend
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8000
     ports:
       - "3100:3000"
     depends_on:
       - backend
+
+volumes:
+  memo_index:

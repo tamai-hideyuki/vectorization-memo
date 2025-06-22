@@ -1,7 +1,8 @@
+torch
+httpx
+pytest
 fastapi
 uvicorn
-python-multipart
-
-torch
-sentence-transformers
 faiss-cpu
+python-multipart
+sentence-transformers
