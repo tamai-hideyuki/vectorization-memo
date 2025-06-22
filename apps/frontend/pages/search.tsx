@@ -14,6 +14,22 @@ type Result = {
     score: number
 }
 
+// 日時を日本時間に変換して "YYYY-MM-DD HH:mm:ss" 形式で返す
+function formatJST(dateString: string): string {
+    const date = new Date(dateString)
+    // ja-JP ロケールと Asia/Tokyo タイムゾーンで整形
+    return date.toLocaleString('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
 export default function SearchPage() {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<Result[]>([])
@@ -26,7 +42,7 @@ export default function SearchPage() {
         setLoading(true)
         setError(null)
         try {
-            const res = await searchMemos(query) // 全件取得
+            const res = await searchMemos(query)
             setResults(res)
         } catch (e: any) {
             setError(e.message)
@@ -85,7 +101,7 @@ export default function SearchPage() {
                                 </td>
                                 <td className={styles.td}>{r.category}</td>
                                 <td className={styles.td}>{r.tags}</td>
-                                <td className={styles.td}>{r.created_at}</td>
+                                <td className={styles.td}>{formatJST(r.created_at)}</td>
                             </tr>
                         ))}
                         </tbody>
