@@ -8,6 +8,7 @@ services:
       - "8001:8000"
     volumes:
       - ../memos:/app/memos
+      - memo_index:/app/apps/backend/.index_data
 
   frontend:
     build:
@@ -20,3 +21,6 @@ services:
       - "3100:3000"
     depends_on:
       - backend
+
+volumes:
+  memo_index:
