@@ -4,9 +4,10 @@ memos/
 
 apps/frontend/.next/
 apps/frontend/node_modules/
-
 apps/frontend/next-env.d.ts/
 apps/frontend/.swc/
+apps/frontend/.env.local
+
 apps/backend/__pycache__/
 apps/backend/.venv/
 

@@ -4,6 +4,7 @@ import uuid, json, faiss, numpy as np, torch, asyncio
 from datetime import datetime
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
+from memo_api  import router as memo_router
 
 # ディレクトリ初期化
 BASE_DIR        = Path(__file__).resolve().parent
@@ -23,6 +24,8 @@ app.add_middleware(
     allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["*"],
 )
+
+app.include_router(memo_router, prefix="/api")
 
 # グローバルリソース
 search_model: SentenceTransformer | None = None
