@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createMemo } from '../lib/api';
+import Link from 'next/link'
 
 export default function Home() {
     const [category, setCategory] = useState('');
@@ -68,6 +69,9 @@ export default function Home() {
                     <pre>{JSON.stringify(result, null, 2)}</pre>
                 </div>
             )}
+              <p style={{ marginTop: '2rem' }}>
+                <Link href="./search">→ メモ検索ページへ</Link>
+              </p>
         </main>
     );
 }
