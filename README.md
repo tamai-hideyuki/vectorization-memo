@@ -52,3 +52,23 @@ vectorization-memo/
 
 ```
 
+## 再ベクトル化手順
+### ./memos/ここにある index.faiss と metas.json に最新のデータを書き込む (PCに優しいコマンドで)
+
+```bash
+cd apps/backend
+
+# ① 仮想環境をアクティブに
+source ../../.venv/bin/activate
+
+# ② 低負荷モードでインデックス再構築
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TORCH_NUM_THREADS=1 TORCH_NUM_INTEROP_THREADS=1
+nice -n 19 python embedding.py \
+  --root_dir ../../memos \
+  --chunk_size 300 \
+  --batch_size 1 \
+  --output_dir ../../memos/.index_data
+
+# ③ コンテナ再起動
+docker restart vectorization-backend
+```

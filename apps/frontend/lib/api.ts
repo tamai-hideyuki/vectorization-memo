@@ -24,11 +24,10 @@ export function createMemo(data: {
     return postForm<{ message: 'saved'; path: string }>('/api/memo', form)
 }
 
-/** セマンティック検索 */
-export function searchMemos(query: string, k = 5) {
+/** セマンティック検索（無制限返却）*/
+export function searchMemos(query: string) {
     const form = new FormData()
     form.append('query', query)
-    form.append('k',     String(k))
     return postForm<{ results: any[] }>('/api/search', form)
         .then(r => r.results)
 }

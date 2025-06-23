@@ -133,7 +133,7 @@ async def create_memo(
 @router.post("/search", summary="メモをセマンティック検索")
 async def search_memos(
     query: str = Form(...),
-    k:     int  = Form(5),
+  # k:     int  = Form(5),
 ):
     if faiss_index is None:
         raise HTTPException(503, "Index not built yet.")
@@ -143,7 +143,9 @@ async def search_memos(
     q /= (np.linalg.norm(q, axis=1, keepdims=True) + 1e-12)
 
     async with index_lock:
-        D, I = faiss_index.search(q.astype("float32"), k)
+        # 全メタ数を取得して、すべて返す
+        total = len(meta_list)
+        D, I = faiss_index.search(q.astype("float32"), total)
 
     results = []
     for dist_np, idx in zip(D[0], I[0]):
