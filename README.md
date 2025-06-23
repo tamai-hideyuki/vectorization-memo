@@ -73,5 +73,6 @@ nice -n 19 python embedding.py \
 
 # ③ コンテナ再起動
 docker restart vectorization-backend
-```
 
+# うまく反映されなければ -> docker compose  up -d --build
+```
