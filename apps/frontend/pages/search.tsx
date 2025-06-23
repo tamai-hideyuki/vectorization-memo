@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { searchMemos } from '../lib/api'
+import { searchMemos, listMemos } from '../lib/api'
 import styles from './SearchPage.module.css'
 
-type Result = {
+// 検索結果の型定義
+export type Result = {
     uuid: string
     title: string
     snippet: string
@@ -14,10 +15,12 @@ type Result = {
     score: number
 }
 
-// 日時を日本時間に変換して "YYYY-MM-DD HH:mm:ss" 形式で返す
+// 定数
+const ITEMS_PER_PAGE = 10
+
+// 日時を日本時間に変換
 function formatJST(dateString: string): string {
-    const date = new Date(dateString)
-    return date.toLocaleString('ja-JP', {
+    return new Date(dateString).toLocaleString('ja-JP', {
         timeZone: 'Asia/Tokyo',
         hour12: false,
         year: 'numeric',
@@ -36,26 +39,51 @@ export default function SearchPage() {
     const [loading, setLoading] = useState(false)
     const [selected, setSelected] = useState<Result | null>(null)
     const [page, setPage] = useState(1)
+    const [exactMatch, setExactMatch] = useState(false)
 
-    const itemsPerPage = 10
-    const totalPages = Math.ceil(results.length / itemsPerPage)
-    const startIndex = (page - 1) * itemsPerPage
-    const paginatedResults = results.slice(startIndex, startIndex + itemsPerPage)
-
-    const handleSearch = async (e: React.FormEvent) => {
+    // 検索実行
+    const handleSearch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
-        setPage(1) // 検索時にページをリセット
+        setPage(1)
         try {
-            const res = await searchMemos(query)
-            setResults(res)
+            const fetched: Result[] = exactMatch
+                ? await listMemos()
+                : await searchMemos(query)
+
+            const filtered = exactMatch
+                ? fetched.filter(r =>
+                    r.title.includes(query) ||
+                    r.snippet.includes(query) ||
+                    r.body.includes(query)
+                )
+                : fetched
+
+            setResults(filtered)
         } catch (e: any) {
             setError(e.message)
+            setResults([])
         } finally {
             setLoading(false)
         }
-    }
+    }, [query, exactMatch])
+
+    // ページネーション計算
+    const totalPages = useMemo(
+        () => Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE)),
+        [results]
+    )
+
+    const paginatedResults = useMemo(() => {
+        const start = (page - 1) * ITEMS_PER_PAGE
+        return results.slice(start, start + ITEMS_PER_PAGE)
+    }, [results, page])
+
+    // ページ変更
+    const goToPage = useCallback((n: number) => {
+        setPage(Math.min(Math.max(1, n), totalPages))
+    }, [totalPages])
 
     return (
         <main className={styles.main}>
@@ -68,6 +96,13 @@ export default function SearchPage() {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                 />
+                <label className={styles.checkboxLabel}>
+                    <input
+                        type="checkbox"
+                        checked={exactMatch}
+                        onChange={e => setExactMatch(e.target.checked)}
+                    /> 完全一致検索
+                </label>
                 <button type="submit" disabled={loading} className={styles.button}>
                     {loading ? '検索中…' : '検索'}
                 </button>
@@ -75,7 +110,7 @@ export default function SearchPage() {
 
             {error && <p className={styles.error}>エラー: {error}</p>}
 
-            {results.length > 0 && (
+            {paginatedResults.length > 0 && (
                 <section className={styles.results}>
                     <h2>検索結果 ({results.length} 件)</h2>
                     <table className={styles.table}>
@@ -91,18 +126,12 @@ export default function SearchPage() {
                         </thead>
                         <tbody>
                         {paginatedResults.map((r, i) => (
-                            <tr key={i}>
+                            <tr key={r.uuid || i}>
                                 <td className={styles.td}>{r.score}</td>
-                                <td
-                                    className={`${styles.td} ${styles.clickable}`}
-                                    onClick={() => setSelected(r)}
-                                >
+                                <td className={`${styles.td} ${styles.clickable}`} onClick={() => setSelected(r)}>
                                     {r.title}
                                 </td>
-                                <td
-                                    className={`${styles.td} ${styles.clickable}`}
-                                    onClick={() => setSelected(r)}
-                                >
+                                <td className={`${styles.td} ${styles.clickable}`} onClick={() => setSelected(r)}>
                                     {r.snippet}
                                 </td>
                                 <td className={styles.td}>{r.category}</td>
@@ -115,25 +144,19 @@ export default function SearchPage() {
 
                     {/* ページネーション */}
                     <div className={styles.pagination}>
-                        <button
-                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                            disabled={page === 1}
-                        >
+                        <button onClick={() => goToPage(page - 1)} disabled={page === 1}>
                             前へ
                         </button>
                         {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(num => (
                             <button
                                 key={num}
-                                onClick={() => setPage(num)}
+                                onClick={() => goToPage(num)}
                                 className={page === num ? styles.activePage : ''}
                             >
                                 {num}
                             </button>
                         ))}
-                        <button
-                            onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={page === totalPages}
-                        >
+                        <button onClick={() => goToPage(page + 1)} disabled={page === totalPages}>
                             次へ
                         </button>
                     </div>
