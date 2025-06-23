@@ -2,7 +2,7 @@
 memos/
 .venv/
 .env.local
-
+docker/.env
 apps/frontend/.next/
 apps/frontend/node_modules/
 apps/frontend/next-env.d.ts/
