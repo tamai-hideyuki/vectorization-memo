@@ -69,6 +69,9 @@ nice -n 19 python embedding.py \
   --batch_size 1 \
   --output_dir ../../memos/.index_data
 
+# python3 embedding.py でも OK
+
 # ③ コンテナ再起動
 docker restart vectorization-backend
 ```
+
