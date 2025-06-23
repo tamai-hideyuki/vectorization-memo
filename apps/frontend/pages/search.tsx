@@ -17,7 +17,6 @@ type Result = {
 // 日時を日本時間に変換して "YYYY-MM-DD HH:mm:ss" 形式で返す
 function formatJST(dateString: string): string {
     const date = new Date(dateString)
-    // ja-JP ロケールと Asia/Tokyo タイムゾーンで整形
     return date.toLocaleString('ja-JP', {
         timeZone: 'Asia/Tokyo',
         hour12: false,
@@ -26,8 +25,8 @@ function formatJST(dateString: string): string {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
-    });
+        second: '2-digit',
+    })
 }
 
 export default function SearchPage() {
@@ -36,11 +35,18 @@ export default function SearchPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [selected, setSelected] = useState<Result | null>(null)
+    const [page, setPage] = useState(1)
+
+    const itemsPerPage = 10
+    const totalPages = Math.ceil(results.length / itemsPerPage)
+    const startIndex = (page - 1) * itemsPerPage
+    const paginatedResults = results.slice(startIndex, startIndex + itemsPerPage)
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
+        setPage(1) // 検索時にページをリセット
         try {
             const res = await searchMemos(query)
             setResults(res)
@@ -84,7 +90,7 @@ export default function SearchPage() {
                         </tr>
                         </thead>
                         <tbody>
-                        {results.map((r, i) => (
+                        {paginatedResults.map((r, i) => (
                             <tr key={i}>
                                 <td className={styles.td}>{r.score}</td>
                                 <td
@@ -106,6 +112,31 @@ export default function SearchPage() {
                         ))}
                         </tbody>
                     </table>
+
+                    {/* ページネーション */}
+                    <div className={styles.pagination}>
+                        <button
+                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                            disabled={page === 1}
+                        >
+                            前へ
+                        </button>
+                        {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(num => (
+                            <button
+                                key={num}
+                                onClick={() => setPage(num)}
+                                className={page === num ? styles.activePage : ''}
+                            >
+                                {num}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={page === totalPages}
+                        >
+                            次へ
+                        </button>
+                    </div>
                 </section>
             )}
 
@@ -114,10 +145,7 @@ export default function SearchPage() {
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <h2>{selected.title}</h2>
                         <pre className={styles.pre}>{selected.body}</pre>
-                        <button
-                            onClick={() => setSelected(null)}
-                            className={styles.closeButton}
-                        >
+                        <button onClick={() => setSelected(null)} className={styles.closeButton}>
                             閉じる
                         </button>
                     </div>
