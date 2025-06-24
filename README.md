@@ -76,19 +76,3 @@ docker restart vectorization-backend
 
 # うまく反映されなければ -> docker compose  up -d --build
 ```
-
-## エラー時対応：
-
-**①：「Could not import module 'main'」エラー**
-```text
-INFO:     Will watch for changes in these directories: ['/app']
-INFO:     Uvicorn running on http://0.0.0.0:8000⁠ (Press CTRL+C to quit)
-INFO:     Started reloader process [1] using StatReload
-INFO:     Started server process [8]
-INFO:     Waiting for application startup.
-```
-- その際は
-```bash
-cd vectorization-memo/backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug 
-```
