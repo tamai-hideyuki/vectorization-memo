@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Form, HTTPException
-import json, faiss, numpy as np, asyncio
+import json
+import faiss
+import numpy as np
+import asyncio
 from pathlib import Path
 from uuid import uuid4
 from datetime import datetime
 from sentence_transformers import SentenceTransformer
 import torch
 
-# ──── CPU スレッド数の設定（トップレベルで一度だけ） ────
+# ──── CPU スレッド数の設定 ────
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
 
@@ -16,8 +19,14 @@ router = APIRouter()
 BASE_DIR        = Path(__file__).parent
 MEMOS_ROOT      = BASE_DIR / "memos"
 INDEX_DATA_ROOT = BASE_DIR / ".index_data"
-MEMOS_ROOT.mkdir(exist_ok=True, parents=True)
-INDEX_DATA_ROOT.mkdir(exist_ok=True, parents=True)
+
+# ディレクトリを安全に作成
+for d in (MEMOS_ROOT, INDEX_DATA_ROOT):
+    if d.exists():
+        if not d.is_dir():
+            raise RuntimeError(f"{d} がディレクトリではありません。手動で削除してください。")
+    else:
+        d.mkdir(parents=True)
 
 # ──── グローバルリソース ────
 search_model: SentenceTransformer | None = None
@@ -36,21 +45,17 @@ async def build_and_save_index():
             header, body = raw.split("---", 1)
             body = body.strip()
 
-            # ヘッダ部をパース
             meta = {
                 k.strip(): v.strip()
                 for line in header.splitlines() if ": " in line
-                for k,v in [line.split(": ",1)]
+                for k, v in [line.split(": ", 1)]
             }
-            # カテゴリ＆ファイル名＆本文を追加
             meta.update({
                 "category": file.parent.name,
                 "filepath": str(file),
                 "body":     body,
-                # スニペットは本文先頭100文字
-                "snippet":  (body[:100] + "...") if len(body)>100 else body
+                "snippet":  (body[:100] + "...") if len(body) > 100 else body
             })
-
             texts.append(body)
             metas.append(meta)
 
@@ -58,11 +63,9 @@ async def build_and_save_index():
             faiss_index, meta_list = None, []
             return
 
-        # モデルロード（未ロード時のみ）
         if search_model is None:
             search_model = SentenceTransformer("sentence-transformers/LaBSE")
 
-        # 埋め込み＋L2正規化
         emb = search_model.encode(
             texts,
             convert_to_numpy=True,
@@ -71,11 +74,9 @@ async def build_and_save_index():
         )
         emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-12)
 
-        # FAISSインデックス構築
         idx = faiss.IndexFlatL2(emb.shape[1])
         idx.add(emb.astype("float32"))
 
-        # グローバル＆ディスク保存
         faiss_index, meta_list = idx, metas
         faiss.write_index(idx, str(INDEX_DATA_ROOT / "index.faiss"))
         (INDEX_DATA_ROOT / "metas.json").write_text(
@@ -93,7 +94,6 @@ async def on_startup():
         lambda: SentenceTransformer("sentence-transformers/LaBSE")
     )
 
-    # インデックス読み込み or 再構築
     idx_path, meta_path = INDEX_DATA_ROOT / "index.faiss", INDEX_DATA_ROOT / "metas.json"
     if idx_path.exists() and meta_path.exists():
         try:
@@ -118,52 +118,58 @@ async def create_memo(
     dirpath.mkdir(exist_ok=True, parents=True)
 
     filepath = dirpath / f"{uid}.txt"
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(f"UUID: {uid}\n")
-        f.write(f"CREATED_AT: {now_iso}\n")
-        f.write(f"TITLE: {title}\n")
-        f.write(f"TAGS: {tags}\n")
-        f.write(f"CATEGORY: {category}\n")
-        f.write("---\n")
-        f.write(body)
+    filepath.write_text(
+        "\n".join([
+            f"UUID: {uid}",
+            f"CREATED_AT: {now_iso}",
+            f"TITLE: {title}",
+            f"TAGS: {tags}",
+            f"CATEGORY: {category}",
+            "---",
+            body
+        ]),
+        encoding="utf-8"
+    )
 
     return {"message": "saved", "path": str(filepath)}
 
 # ──── API: セマンティック検索 ────
 @router.post("/search", summary="メモをセマンティック検索")
-async def search_memos(
-    query: str = Form(...),
-  # k:     int  = Form(5),
-):
+async def search_memos(query: str = Form(...)):
+    # 未構築ならここでフォールバックビルド
     if faiss_index is None:
-        raise HTTPException(503, "Index not built yet.")
+        await build_and_save_index()
+        if faiss_index is None:
+            raise HTTPException(503, "Index build failed.")
 
     # クエリ埋め込み＋正規化
-    q = search_model.encode([query], convert_to_numpy=True, normalize_embeddings=False)
+    q = search_model.encode(
+        [query],
+        convert_to_numpy=True,
+        normalize_embeddings=False
+    )
     q /= (np.linalg.norm(q, axis=1, keepdims=True) + 1e-12)
 
     async with index_lock:
-        # 全メタ数を取得して、すべて返す
         total = len(meta_list)
         D, I = faiss_index.search(q.astype("float32"), total)
 
     results = []
     for dist_np, idx in zip(D[0], I[0]):
-        if idx < 0: continue
-        dist  = float(dist_np)
-        score = round(1.0 / (1.0 + dist), 4)
-        m     = meta_list[idx]
+        if idx < 0:
+            continue
+        m = meta_list[idx]
+        score = round(1.0 / (1.0 + float(dist_np)), 4)
         results.append({
-            "uuid":       m.get("UUID",""),
-            "title":      m.get("TITLE",""),
-            "snippet":    m.get("snippet",""),
-            "body":       m.get("body",""),
-            "category":   m.get("category",""),
-            "tags":       m.get("TAGS",""),
-            "created_at": m.get("CREATED_AT",""),
+            "uuid":       m.get("UUID", ""),
+            "title":      m.get("TITLE", ""),
+            "snippet":    m.get("snippet", ""),
+            "body":       m.get("body", ""),
+            "category":   m.get("category", ""),
+            "tags":       m.get("TAGS", ""),
+            "created_at": m.get("CREATED_AT", ""),
             "score":      score,
         })
 
-    # スコア降順
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"results": results}

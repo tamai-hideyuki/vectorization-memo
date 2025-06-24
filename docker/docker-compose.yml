@@ -7,8 +7,8 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ../memos:/app/memos
-      - ../memos/.index_data:/app/apps/backend/.index_data:rw
+        - ../memos:/app/memos
+        - ../memos/.index_data:/app/.index_data:rw
     networks:
       default:
         aliases:
@@ -19,7 +19,7 @@ services:
       context: ..
       dockerfile: docker/frontend.Dockerfile
     environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://backend:8000
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8001
     ports:
       - "3100:3000"
     depends_on:
