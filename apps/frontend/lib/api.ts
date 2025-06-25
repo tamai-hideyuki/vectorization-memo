@@ -3,6 +3,20 @@ import { Result } from './types'
 /** メモ作成／検索で使うペイロードの共通型 */
 export type MemoPayload = Record<string, string>
 
+/** バックエンドから既存リストを取得 */
+
+export async function getCategories(): Promise<string[]> {
+    const res = await fetch('/api/categories');
+    if (!res.ok) throw new Error('カテゴリ取得失敗');
+    return res.json();
+}
+export async function getTags(): Promise<string[]> {
+    const res = await fetch('/api/tags');
+    if (!res.ok) throw new Error('タグ取得失敗');
+    return res.json();
+}
+
+
 /** NEXT_PUBLIC_API_BASE_URL をビルド時に埋め込む */
 const API_BASE = (() => {
     const base = process.env.NEXT_PUBLIC_API_BASE_URL

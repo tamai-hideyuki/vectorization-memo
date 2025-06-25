@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Form, HTTPException
+from fastapi.responses import JSONResponse
+from typing import List, Optional
 import json
 import faiss
 import numpy as np
@@ -20,22 +22,22 @@ BASE_DIR        = Path(__file__).parent
 MEMOS_ROOT      = BASE_DIR / "memos"
 INDEX_DATA_ROOT = BASE_DIR / ".index_data"
 
-# ディレクトリを安全に作成
 for d in (MEMOS_ROOT, INDEX_DATA_ROOT):
-    if d.exists():
-        if not d.is_dir():
-            raise RuntimeError(f"{d} がディレクトリではありません。手動で削除してください。")
-    else:
-        d.mkdir(parents=True)
+    if d.exists() and not d.is_dir():
+        raise RuntimeError(f"{d} がディレクトリではありません。手動で削除してください。")
+    d.mkdir(parents=True, exist_ok=True)
 
 # ──── グローバルリソース ────
-search_model: SentenceTransformer | None = None
-faiss_index:  faiss.Index        | None = None
-meta_list:    list[dict]               = []
+search_model: Optional[SentenceTransformer] = None
+faiss_index:  Optional[faiss.Index]        = None
+meta_list:    List[dict]                   = []
 index_lock = asyncio.Lock()
 
-# ──── インデックス構築 & 保存 ────
+
 async def build_and_save_index():
+    """
+    全ファイルからインデックスとメタ情報を再構築し、ディスクに保存します。
+    """
     global search_model, faiss_index, meta_list
 
     async with index_lock:
@@ -70,7 +72,7 @@ async def build_and_save_index():
             texts,
             convert_to_numpy=True,
             normalize_embeddings=False,
-            show_progress_bar=True
+            show_progress_bar=False
         )
         emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-12)
 
@@ -84,12 +86,15 @@ async def build_and_save_index():
             encoding="utf-8"
         )
 
-# ──── サーバ起動時: モデルロード & インデックス初期化 ────
+
 @router.on_event("startup")
 async def on_startup():
+    """
+    サーバ起動時にモデルロードとインデックス初期化を行います。
+    """
     global search_model, faiss_index, meta_list
 
-    # モデルを別スレッドでロード
+    # モデルロード
     search_model = await asyncio.to_thread(
         lambda: SentenceTransformer("sentence-transformers/LaBSE")
     )
@@ -104,7 +109,7 @@ async def on_startup():
     else:
         await build_and_save_index()
 
-# ──── API: メモ作成 ────
+
 @router.post("/memo", summary="メモを作成して保存")
 async def create_memo(
     category: str = Form(...),
@@ -112,37 +117,76 @@ async def create_memo(
     tags:     str = Form(""),
     body:     str = Form(...),
 ):
+    """
+    新規メモを保存し、インクリメンタルにインデックスとメタリストを更新します。
+    """
     uid     = uuid4().hex
     now_iso = datetime.utcnow().isoformat() + "Z"
     dirpath = MEMOS_ROOT / category
     dirpath.mkdir(exist_ok=True, parents=True)
 
     filepath = dirpath / f"{uid}.txt"
-    filepath.write_text(
-        "\n".join([
-            f"UUID: {uid}",
-            f"CREATED_AT: {now_iso}",
-            f"TITLE: {title}",
-            f"TAGS: {tags}",
-            f"CATEGORY: {category}",
-            "---",
-            body
-        ]),
-        encoding="utf-8"
-    )
+    content = "\n".join([
+        f"UUID: {uid}",
+        f"CREATED_AT: {now_iso}",
+        f"TITLE: {title}",
+        f"TAGS: {tags}",
+        f"CATEGORY: {category}",
+        "---",
+        body
+    ])
+    filepath.write_text(content, encoding="utf-8")
 
-    return {"message": "saved", "path": str(filepath)}
+    # インクリメンタル更新
+    async with index_lock:
+        # メタ情報追加
+        new_meta = {
+            "UUID":       uid,
+            "CREATED_AT": now_iso,
+            "TITLE":      title,
+            "TAGS":       tags,
+            "CATEGORY":   category,
+            "filepath":   str(filepath),
+            "body":       body,
+            "snippet":    (body[:100] + "...") if len(body) > 100 else body
+        }
+        meta_list.append(new_meta)
 
-# ──── API: セマンティック検索 ────
+        # 埋め込みを計算してインデックスに追加
+        if search_model is None:
+            search_model = SentenceTransformer("sentence-transformers/LaBSE")
+        emb = search_model.encode(
+            [body],
+            convert_to_numpy=True,
+            normalize_embeddings=False
+        )
+        emb /= (np.linalg.norm(emb, axis=1, keepdims=True) + 1e-12)
+        if faiss_index is None:
+            # 初回は全量ビルド
+            await build_and_save_index()
+        else:
+            faiss_index.add(emb.astype("float32"))
+
+        # ディスクに保存
+        faiss.write_index(faiss_index, str(INDEX_DATA_ROOT / "index.faiss"))
+        (INDEX_DATA_ROOT / "metas.json").write_text(
+            json.dumps(meta_list, ensure_ascii=False, indent=2),
+            encoding="utf-8"
+        )
+
+    return JSONResponse({"message": "saved", "path": str(filepath)})
+
+
 @router.post("/search", summary="メモをセマンティック検索")
 async def search_memos(query: str = Form(...)):
-    # 未構築ならここでフォールバックビルド
+    """
+    クエリを埋め込み、インデックス検索してスコア順に返却します。
+    """
     if faiss_index is None:
         await build_and_save_index()
         if faiss_index is None:
             raise HTTPException(503, "Index build failed.")
 
-    # クエリ埋め込み＋正規化
     q = search_model.encode(
         [query],
         convert_to_numpy=True,
@@ -155,21 +199,50 @@ async def search_memos(query: str = Form(...)):
         D, I = faiss_index.search(q.astype("float32"), total)
 
     results = []
-    for dist_np, idx in zip(D[0], I[0]):
+    for dist, idx in zip(D[0], I[0]):
         if idx < 0:
             continue
         m = meta_list[idx]
-        score = round(1.0 / (1.0 + float(dist_np)), 4)
+        score = round(1.0 / (1.0 + float(dist)), 4)
         results.append({
             "uuid":       m.get("UUID", ""),
             "title":      m.get("TITLE", ""),
             "snippet":    m.get("snippet", ""),
             "body":       m.get("body", ""),
-            "category":   m.get("category", ""),
+            "category":   m.get("CATEGORY", ""),
             "tags":       m.get("TAGS", ""),
             "created_at": m.get("CREATED_AT", ""),
             "score":      score,
         })
 
+    # スコア降順
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"results": results}
+
+
+@router.get("/categories", response_model=List[str], summary="既存のカテゴリ一覧を取得")
+async def list_categories():
+    """
+    meta_list からユニークなカテゴリをソートして返却します。
+    """
+    if faiss_index is None:
+        await build_and_save_index()
+    cats = sorted({ m.get("CATEGORY", "") for m in meta_list if m.get("CATEGORY") })
+    return cats
+
+
+@router.get("/tags", response_model=List[str], summary="既存のタグ一覧を取得")
+async def list_tags():
+    """
+    meta_list の TAGS をパースし、ユニークなタグをソートして返却します。
+    """
+    if faiss_index is None:
+        await build_and_save_index()
+
+    tag_set = set()
+    for m in meta_list:
+        for raw in (m.get("TAGS", "") or "").split(","):
+            t = raw.strip()
+            if t:
+                tag_set.add(t)
+    return sorted(tag_set)
