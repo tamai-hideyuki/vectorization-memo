@@ -1,6 +1,7 @@
 .idea/
 memos/
 .venv/
+docs/
 .env.local
 docker/.env
 apps/frontend/.next/
@@ -16,6 +17,6 @@ apps/frontend/public/.DS_Store
 apps/backend/__pycache__/
 apps/backend/.venv/
 
-# Python bytecode
+.dockerignore
 __pycache__/
 *.py[cod]
