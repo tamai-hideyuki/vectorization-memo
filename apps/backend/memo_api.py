@@ -5,6 +5,7 @@ import json
 import faiss
 import numpy as np
 import asyncio
+import os
 from pathlib import Path
 from uuid import uuid4
 from datetime import datetime
@@ -18,9 +19,14 @@ torch.set_num_interop_threads(1)
 router = APIRouter()
 
 # ──── ディレクトリ設定 ────
-BASE_DIR        = Path(__file__).parent
-MEMOS_ROOT      = BASE_DIR / "memos"
-INDEX_DATA_ROOT = BASE_DIR / ".index_data"
+# デフォルトではプロジェクトルート直下の "memos"／".index_data" を使う
+DEFAULT_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # apps/backend → apps → プロジェクト
+DEFAULT_MEMOS_ROOT   = DEFAULT_PROJECT_ROOT / "memos"
+DEFAULT_INDEX_ROOT   = DEFAULT_MEMOS_ROOT / ".index_data"
+
+# 環境変数があればそちらを優先
+MEMOS_ROOT      = Path(os.getenv("MEMOS_ROOT", str(DEFAULT_MEMOS_ROOT)))
+INDEX_DATA_ROOT = Path(os.getenv("INDEX_DATA_ROOT", str(DEFAULT_INDEX_ROOT)))
 
 for d in (MEMOS_ROOT, INDEX_DATA_ROOT):
     if d.exists() and not d.is_dir():

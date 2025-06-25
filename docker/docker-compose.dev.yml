@@ -4,29 +4,20 @@ services:
       context: ..
       dockerfile: docker/backend.Dockerfile.dev
 
-    # ★ ホストの ./memos → コンテナ /app/memos
     volumes:
-      - ../memos:/app/memos
-      - ../memos/.index_data:/app/.index_data:rw
-      # ソースもマウントしてホットリロード
       - ../apps/backend:/app
+      - ../memos:/memos
+      - ../memos/.index_data:/memos/.index_data:rw
 
     environment:
+      - MEMOS_ROOT=/memos
+      - INDEX_DATA_ROOT=/memos/.index_data
       - PYTHONUNBUFFERED=1
-
-    command:
-      - uvicorn
-      - main:app
-      - --host
-      - "0.0.0.0"
-      - --port
-      - "8000"
-      - --reload
-      - --log-level
-      - debug
 
     ports:
       - "8001:8000"
+
+
 
   frontend:
     build:
