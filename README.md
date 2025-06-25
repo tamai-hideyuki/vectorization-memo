@@ -76,6 +76,8 @@ docker restart vectorization-backend
 
 # うまく反映されなければ -> docker compose  up -d --build
 ```
+**上記手順よりもブラウザで「再ベクトル化」ボタンを押す方が早い。**
+
 
 ## docker
 
