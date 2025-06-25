@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { createMemo, getCategories, getTags, incrementalVectorize } from '../lib/api';
 import Link from 'next/link';
@@ -66,6 +67,12 @@ export default function Home() {
     };
 
     return (
+    <>
+        {/* ① ここでタイトルを書き換える */}
+        <Head>
+            <title>vectorization-memo</title>
+            <meta name="description" content="ベクトル化メモ検索ツール" />
+        </Head>
         <main style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
             <h1>メモ作成</h1>
 
@@ -162,5 +169,6 @@ export default function Home() {
                 <Link href="./search">→ メモ検索ページへ</Link>
             </p>
         </main>
+      </>
     );
 }

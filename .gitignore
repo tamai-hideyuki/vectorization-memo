@@ -11,7 +11,7 @@ apps/frontend/.env.local
 
 apps/.DS_Store
 apps/backend/.DS_Store
-
+apps/frontend/public/.DS_Store
 
 apps/backend/__pycache__/
 apps/backend/.venv/
