@@ -63,9 +63,12 @@ export async function createMemo(
 }
 
 /** 再ベクトル化 */
-// lib/api.ts
 export async function incrementalVectorize(): Promise<{ status: string }> {
-    const res = await fetch('/admin/incremental-vectorize', { method: 'POST' });
+    const res = await fetch(
+        `${API_BASE}/admin/incremental-vectorize`,
+        { method: 'POST' }
+    );
     if (!res.ok) throw new Error(`Vectorize failed: ${res.statusText}`);
     return res.json();
 }
+
