@@ -1,0 +1,28 @@
+# 1) ビルドステージ
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+COPY apps/frontend/package*.json ./
+RUN npm install
+COPY apps/frontend/ ./
+RUN npm run build
+
+# 2) ランタイムステージ
+FROM node:20-alpine
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# production 依存のみ
+COPY apps/frontend/package*.json ./
+RUN npm install --production
+
+# ビルド成果物だけをコピー
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./next.config.js
+
+EXPOSE 3000
+
+# Next.js プロダクションサーバー
+CMD ["npm", "run", "start"]

@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# devDependencies も含めてインストール
+COPY apps/frontend/package*.json ./
+RUN npm install
+
+# ソース丸ごとマウント（docker-compose.dev.yml で volume: ../apps/frontend:/app）
+COPY apps/frontend/ ./
+
+EXPOSE 3000
+
+# Next.js dev サーバーでホットリロード
+CMD ["npm", "run", "dev"]
