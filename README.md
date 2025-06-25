@@ -76,3 +76,14 @@ docker restart vectorization-backend
 
 # うまく反映されなければ -> docker compose  up -d --build
 ```
+
+## docker
+
+```bash
+# 開発用
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+# 本場用
+docker compose up -d --build
+```

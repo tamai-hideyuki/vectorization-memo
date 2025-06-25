@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# 依存は dev も含めて全部
+COPY apps/backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ソース丸ごとマウントしてホットリロード
+# （docker-compose.dev.yml で volume: ../apps/backend:/app を指定）
+COPY apps/backend/ ./
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]

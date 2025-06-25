@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# 依存は production のみ
+COPY apps/backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 本番に必要なファイルだけコピー
+COPY apps/backend/main.py        ./main.py
+COPY apps/backend/startup.py     ./startup.py
+COPY apps/backend/routers       ./routers
+# その他、実際に import されるモジュールだけ
+
+# 事前に作成したインデックスを含める
+COPY memos/index.faiss    ./memos/index.faiss
+COPY memos/metas.json     ./memos/metas.json
+
+EXPOSE 8000
+
+# リロード外し・ログは info
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]

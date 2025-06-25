@@ -2,27 +2,17 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: docker/backend.Dockerfile
+      dockerfile: docker/backend.Dockerfile.prod
     container_name: vectorization-backend
     ports:
       - "8001:8000"
-    volumes:
-        - ../memos:/app/memos
-        - ../memos/.index_data:/app/.index_data:rw
-    networks:
-      default:
-        aliases:
-          - vectorization-backend
 
   frontend:
     build:
       context: ..
-      dockerfile: docker/frontend.Dockerfile
+      dockerfile: docker/frontend.Dockerfile.prod
+    container_name: vectorization-frontend
     environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8001
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8001
     ports:
       - "3100:3000"
-    depends_on:
-      - backend
-    networks:
-      - default

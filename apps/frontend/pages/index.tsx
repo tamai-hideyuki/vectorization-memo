@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createMemo, getCategories, getTags } from '../lib/api';
+import { createMemo, getCategories, getTags, incrementalVectorize } from '../lib/api';
 import Link from 'next/link';
 
 export default function Home() {
@@ -13,6 +13,10 @@ export default function Home() {
     const [result, setResult]     = useState<any>(null);
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState<string | null>(null);
+
+    const [vectorizing, setVectorizing]       = useState(false);
+    const [vectorizeStatus, setVectorizeStatus] = useState<string>('');
+
 
     // ① 既存のカテゴリー／タグを取得
     useEffect(() => {
@@ -45,6 +49,19 @@ export default function Home() {
             setError(e.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRevectorize = async () => {
+        setVectorizing(true);
+        setVectorizeStatus('再ベクトル化を開始しています…');
+        try {
+            const { status } = await incrementalVectorize();
+            setVectorizeStatus(status);
+        } catch (e: any) {
+            setVectorizeStatus(`エラー: ${e.message}`);
+        } finally {
+            setVectorizing(false);
         }
     };
 
@@ -129,6 +146,17 @@ export default function Home() {
                     <pre>{JSON.stringify(result, null, 2)}</pre>
                 </div>
             )}
+
+            <div style={{ marginTop: '2rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                <button
+                    onClick={handleRevectorize}
+                    disabled={vectorizing}
+                    style={{ padding: '0.5rem 1rem' }}
+                >
+                    {vectorizing ? '再ベクトル化中…' : '再ベクトル化'}
+                </button>
+                {vectorizeStatus && <p style={{ marginTop: '0.5rem' }}>{vectorizeStatus}</p>}
+            </div>
 
             <p style={{ marginTop: '2rem' }}>
                 <Link href="./search">→ メモ検索ページへ</Link>
